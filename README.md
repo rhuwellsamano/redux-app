@@ -1,68 +1,180 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# REDUX LAYOUT FOR REFERENCE
 
-## Available Scripts
+###
+// npm install redux
+// npm install react-redux
+// npm install react-router-dom
+// npm install --save-dev redux-devtools-extension
+// npm install redux-thunk
 
-In the project directory, you can run:
+// ALTERNATIVELY: npm install --save redux react-redux redux-thunk
 
-### `npm start`
+##// index.js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import './index.css';
+import App from './App';
+import * as serviceWorker from './serviceWorker';
+import {createStore, applyMiddleware} from 'redux';
+import {Provider} from 'react-redux';
+import reducer from './redux/reducer';
+import {BrowserRouter} from 'react-router-dom';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import thunk from 'redux-thunk';
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+const store = createStore(reducer, composeWithDevTools(
+  applyMiddleware(thunk)
+))
 
-### `npm test`
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+// wrap <APP/> with <BrowserRouter> and then wrap both in <Provider> store={store}>
 
-### `npm run build`
+ReactDOM.render(
+  <Provider store={store}>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </Provider>
+, document.getElementById('root'));
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below. Note this comes with some pitfalls.
+// Learn more about service workers: https://bit.ly/CRA-PWA
+serviceWorker.unregister();
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+##// App.js
+import React, { Component } from 'react';
+import './App.css';
+import Container from './containers/Container';
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+class App extends Component {
+  render() {
+    return (
+      <div className="App">
+        <Container />
+      </div>
+    );
+  }
+}
 
-### `npm run eject`
+export default App;
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+##// Coontainer.js
+import React from 'react';
+import {connect} from 'react-redux';
+import {usersGetFetch} from '../redux/actions';
+import Card from '../components/Card';
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+class Container extends React.Component {
+  componentDidMount = () => {
+    this.props.usersGetFetch()
+  }
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+  formatCards = () => {
+    return this.props.users.map(user => <Card key={user.id} user={user}/>)
+  }
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+  // YOU CAN CALL THE REDUX STORE WITH this.props.whateverkeyvalueyouneed AS
+  // LONG AS MAPSTATETOPROPS FUNCTION IS IN THE JS FILE AND YOU
+  // IMPORTED AND USED CONNECT IN YOUR EXPORT DEFAULT BELOW!!
 
-## Learn More
+  render() {
+    return (
+      <div>
+        YO.
+        {this.props.message}
+        {this.formatCards()}
+      </div>
+    )
+  }
+}
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+// "I'm getting something from the store"
+const mapStateToProps = state => {
+  return {
+    message: state.message,
+    users: state.users
+  }
+}
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+// "I got your shipment right here boi"
+const mapDispatchToProps = dispatch => {
+  return {
+    usersGetFetch: () => dispatch(usersGetFetch())
+  }
+}
 
-### Code Splitting
+// the middle-man connect // mapStateToProps to have access to Store // mapDispatchToProps to have access to Dispatcher
+export default connect(mapStateToProps, mapDispatchToProps)(Container);
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+##// Card.js
+import React from 'react';
 
-### Analyzing the Bundle Size
+const Card = ({user}) => {
+  return (
+    <div>
+      Name: {user.name}
+    </div>
+  )
+}
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+export default Card;
 
-### Making a Progressive Web App
+##// ./redux/reducer.js
+// initial state
+const initialState = {
+  current_user: {},
+  users: [],
+  message: "YEERRR"
+}
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+// the Dispatcher who gets alert text messages from us and sends/returns the applicable specialized  fireteam to handle them
+// state is the store above (initialState) and action is the actions payload it's expecting (an object, an array, etc)
+export default function reducer(state = initialState, action) {
+  switch (action.type) {
+    case "LOGIN_USER":
+      return {...state, current_user: action.payload}
+    case "LOAD_USERS":
+      return {...state, users: action.payload}
+    default:
+      return state;
+  }
+}
 
-### Advanced Configuration
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+// const action = {
+//   type: "THIS_STUFFF",
+//   payload: {}
+// }
 
-### Deployment
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+##// ./redux/actions.js
+// list of all types of Actions and the payloads it sends
+// fetch is kind of like an action that activates on "FETCH" and expects to get back data from the server (JSON)
+// who want that Action??
 
-### `npm run build` fails to minify
+export const addUserToState = userObj => {
+  return {
+    type: "ADD_USER_TO_STATE",
+    payload: userObj
+  }
+}
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+const loadUsers = users => {
+  return {
+    type: "LOAD_USERS",
+    payload: users
+  }
+}
+
+export const usersGetFetch = () => {
+  return (dispatch) => {
+    return fetch("https://jsonplaceholder.typicode.com/users")
+    .then(res => res.json())
+    .then(users => {
+      console.log("usersGetFetch:", users)
+      dispatch(loadUsers(users))
+    })
+  }
+}
